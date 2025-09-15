@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/tewetech/kalkulator/refs/heads/main/favicon-kalkulator.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS untuk mengatur tampilan kalkulator */
+        body {
+            /* Mengubah font-family menjadi Quicksand */
+            font-family: 'Quicksand', sans-serif;
+            display: flex; /* Menggunakan flexbox */
+            justify-content: center; /* Pusatkan horizontal */
+            align-items: center; /* Pusatkan vertikal */
+            min-height: 100vh;
+            background-color: #e0eafc; /* Warna latar belakang lebih lembut */
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            /* Mengubah arah flexbox agar tetap horizontal (row) terlepas dari ukuran layar */
+            flex-direction: row; 
+            gap: 20px;
+            width: 100%;
+            max-width: 600px; /* Lebar maksimal wadah diperkecil */
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            /* Menambahkan align-items: stretch untuk memastikan item memiliki tinggi yang sama */
+            align-items: stretch;
+        }
+        
+        .kalkulator {
+            flex-basis: 50%; /* Mengambil 50% dari lebar wadah */
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            /* Memastikan tinggi kalkulator sama dengan tinggi container */
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .history {
+            flex-basis: 50%; /* Mengambil 50% dari lebar wadah, sama dengan kalkulator */
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+            /* Tinggi riwayat akan menyesuaikan dengan tinggi container */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            /* Memastikan tinggi riwayat sama dengan tinggi container */
+            align-self: stretch;
+        }
+
+        .kalkulator h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+        /* Menghapus gaya untuk .history h2 karena akan dihapus dari HTML */
+        
+        #layar {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 2em;
+            text-align: right;
+            border: none;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #e9e9e9;
+            color: #333;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+            /* Memungkinkan layar bergeser secara horizontal jika konten terlalu panjang */
+            overflow-x: auto; 
+            /* Mengatur arah teks dari kanan ke kiri untuk selalu menampilkan bagian akhir */
+            direction: rtl;
+        }
+
+        .tombol-grid-main {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) 1fr;
+            gap: 8px;
+            flex-grow: 1; /* Memastikan grid tombol mengisi ruang yang tersisa */
+        }
+
+        .tombol {
+            padding: 15px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .tombol:hover {
+            background-color: #e0e0e0;
+        }
+
+        .operator {
+            background-color: #ff8c00;
+            color: white;
+            grid-column: 4;
+        }
+
+        .operator:hover {
+            background-color: #e07b00;
+        }
+        
+        #clear {
+            background-color: #dc3545;
+            color: white;
+            grid-column: 1 / span 3;
+        }
+
+        #clear:hover {
+            background-color: #c82333;
+        }
+        
+        #historyList {
+            list-style-type: none;
+            padding: 0;
+            /* Mengatur margin agar daftar naik, sesuai permintaan */
+            margin: 0;
+            flex-grow: 1; /* Agar daftar mengisi ruang yang tersedia */
+            overflow-y: auto;
+        }
+
+        #historyList li {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 1em;
+            color: #555;
+            word-wrap: break-word;
+        }
+
+        #historyList li:last-child {
+            border-bottom: none;
+        }
+
+        #clearHistoryBtn {
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 1em;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            /* Mengubah font tombol hapus riwayat menjadi Quicksand sesuai permintaan */
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        #clearHistoryBtn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="kalkulator">
+        <h2>Kalkulator</h2>
+        <input type="text" id="layar" placeholder="0" readonly>
+        <div class="tombol-grid-main">
+            <button class="tombol" id="clear">AC</button>
+            <button class="tombol operator">/</button>
+            
+            <button class="tombol">7</button>
+            <button class="tombol">8</button>
+            <button class="tombol">9</button>
+            <button class="tombol operator">*</button>
+            
+            <button class="tombol">4</button>
+            <button class="tombol">5</button>
+            <button class="tombol">6</button>
+            <button class="tombol operator">-</button>
+
+            <button class="tombol">1</button>
+            <button class="tombol">2</button>
+            <button class="tombol">3</button>
+            <button class="tombol operator">+</button>
+            
+            <button class="tombol" style="grid-column: span 3;">0</button>
+            <button class="tombol">.</button>
+        </div>
+    </div>
+    <div class="history">
+        <ul id="historyList"></ul>
+        <button id="clearHistoryBtn">Hapus Riwayat</button>
+    </div>
+</div>
+
+<script>
+    // Ambil elemen-elemen dari DOM
+    const layar = document.getElementById('layar');
+    const historyList = document.getElementById('historyList');
+    const tombolGrid = document.querySelector('.tombol-grid-main');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    // Variabel untuk menyimpan ekspresi lengkap yang sedang dibuat
+    let ekspresiSaatIni = '';
+
+    // Fungsi untuk menambahkan riwayat ke daftar di sisi kanan
+    function tambahKeRiwayat(ekspresi, hasil) {
+        const itemRiwayat = document.createElement('li');
+        itemRiwayat.textContent = `${ekspresi} = ${hasil}`;
+        // Menambahkan item baru di bagian atas daftar
+        historyList.prepend(itemRiwayat);
+
+        // Memeriksa jumlah baris riwayat
+        // Perubahan: Batas riwayat dari 8 menjadi 9
+        if (historyList.children.length > 9) {
+            // Hapus baris terlama (baris terakhir) jika jumlahnya lebih dari 9
+            historyList.removeChild(historyList.lastElementChild);
+        }
+    }
+
+    // Fungsi untuk menghitung ekspresi matematika
+    function hitung(ekspresi) {
+        try {
+            // Evaluasi ekspresi menggunakan eval() untuk mendapatkan hasil
+            const hasil = eval(ekspresi);
+            // Cek apakah hasil adalah angka yang valid dan tidak tak terhingga
+            if (isFinite(hasil)) {
+                // Bulatkan hasil untuk menghindari angka desimal yang terlalu panjang
+                return Math.round(hasil * 10000) / 10000;
+            } else {
+                return 'Error'; // Jika hasilnya tidak valid
+            }
+        } catch (e) {
+            return 'Error'; // Menangani kesalahan jika ekspresi tidak valid
+        }
+    }
+    
+    // Fungsi utama untuk menangani semua input (klik tombol atau tekan keyboard)
+    function handleInput(nilaiInput) {
+        // PERUBAHAN: ganti 'Escape' dengan 'AC' (dari tombol) atau 'Delete' (dari keyboard)
+        if (nilaiInput === 'AC' || nilaiInput === 'Delete') {
+            // Jika tombol "AC" atau tombol 'Delete' diklik, reset layar dan ekspresi
+            layar.value = '0';
+            ekspresiSaatIni = '';
+        } else if ('+-*/'.includes(nilaiInput)) {
+            // Jika tombol operator diklik
+            // Cegah penambahan operator ganda atau operator di awal ekspresi
+            if (ekspresiSaatIni === '' || '+-*/.'.includes(ekspresiSaatIni.slice(-1))) {
+                return;
+            }
+            ekspresiSaatIni += nilaiInput;
+            layar.value = ekspresiSaatIni;
+        } else if (nilaiInput === '=' || nilaiInput === 'Enter') {
+            // Jika tombol "=" atau 'Enter' diklik, hitung hasil dan tampilkan
+            const hasil = hitung(ekspresiSaatIni);
+            tambahKeRiwayat(ekspresiSaatIni, hasil);
+            ekspresiSaatIni = hasil.toString(); // Atur hasil sebagai ekspresi baru untuk operasi selanjutnya
+            layar.value = ekspresiSaatIni;
+        } else if (nilaiInput === 'Backspace') {
+            // Tangani tombol 'Backspace' untuk menghapus karakter terakhir
+            ekspresiSaatIni = ekspresiSaatIni.slice(0, -1);
+            layar.value = ekspresiSaatIni === '' ? '0' : ekspresiSaatIni;
+            
+            // Hitung ulang dan update riwayat setelah penghapusan
+            if (ekspresiSaatIni !== '') {
+                const hasil = hitung(ekspresiSaatIni);
+                if (hasil !== 'Error') {
+                    // Hanya tambahkan riwayat jika hasilnya valid
+                    tambahKeRiwayat(ekspresiSaatIni, hasil);
+                }
+            }
+        } else {
+            // Jika tombol angka atau titik desimal diklik
+            ekspresiSaatIni += nilaiInput;
+            // Tampilkan ekspresi lengkap di layar
+            layar.value = ekspresiSaatIni;
+
+            // Hitung dan tambahkan hasil ke riwayat secara otomatis setelah setiap input
+            const hasil = hitung(ekspresiSaatIni);
+            if (hasil !== 'Error') {
+                tambahKeRiwayat(ekspresiSaatIni, hasil);
+            }
+        }
+    }
+
+    // Tangani semua klik tombol pada grid tombol
+    tombolGrid.addEventListener('click', (e) => {
+        // Pastikan yang diklik adalah tombol dengan memeriksa tag name
+        if (e.target.tagName !== 'BUTTON') return;
+
+        const nilaiTombol = e.target.textContent;
+        handleInput(nilaiTombol);
+    });
+
+    // Tangani input dari keyboard
+    document.addEventListener('keydown', (e) => {
+        // Peta tombol keyboard ke nilai yang relevan
+        const keyMap = {
+            '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+            '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+            '+': '+', '-': '-', '*': '*', '/': '/', '.': '.',
+            'Enter': '=',
+            // PERUBAHAN: Ganti 'Escape' dengan 'Delete' di keyMap
+            'Delete': 'Delete',
+            'Backspace': 'Backspace'
+        };
+
+        const nilaiInput = keyMap[e.key];
+
+        if (nilaiInput) {
+            handleInput(nilaiInput);
+        }
+    });
+
+    // Tangani klik tombol "Hapus Riwayat"
+    clearHistoryBtn.addEventListener('click', () => {
+        historyList.innerHTML = ''; // Mengosongkan daftar riwayat
+    });
+</script>
+
+</body>
+</html>
