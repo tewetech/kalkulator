@@ -20,45 +20,50 @@
             background-color: #e0eafc; /* Warna latar belakang lebih lembut */
             margin: 0;
             padding: 20px;
+            box-sizing: border-box; 
+            /* **PERUBAHAN:** Menghilangkan scrollbar utama pada body */
+            overflow: hidden; 
         }
 
         .container {
             display: flex;
-            /* Mengubah arah flexbox agar tetap horizontal (row) terlepas dari ukuran layar */
             flex-direction: row; 
             gap: 20px;
             width: 100%;
-            max-width: 600px; /* Lebar maksimal wadah diperkecil */
+            max-width: 600px; 
             background-color: #fff;
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            /* Menambahkan align-items: stretch untuk memastikan item memiliki tinggi yang sama */
             align-items: stretch;
+            /* **PERUBAHAN:** Mengatur tinggi container agar sesuai dengan viewport */
+            height: 100%; 
+            max-height: calc(100vh - 40px); /* 40px = padding body atas+bawah */
+            box-sizing: border-box;
         }
         
         .kalkulator {
-            flex-basis: 50%; /* Mengambil 50% dari lebar wadah */
+            flex-basis: 50%; 
             padding: 15px;
             background-color: #f9f9f9;
             border-radius: 12px;
-            /* Memastikan tinggi kalkulator sama dengan tinggi container */
             align-self: stretch;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Mencegah scroll pada kalkulator */
         }
         
         .history {
-            flex-basis: 50%; /* Mengambil 50% dari lebar wadah, sama dengan kalkulator */
+            flex-basis: 50%; 
             padding: 15px;
             background-color: #f9f9f9;
             border-radius: 12px;
             box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
-            /* Tinggi riwayat akan menyesuaikan dengan tinggi container */
-            overflow-y: auto;
+            /* REVERTED: Mengembalikan overflow-y: auto untuk riwayat, seperti fungsi aslinya */
+            /* Namun, display tetap flex agar tombol Hapus Riwayat berada di bawah */
+            overflow-y: auto; 
             display: flex;
             flex-direction: column;
-            /* Memastikan tinggi riwayat sama dengan tinggi container */
             align-self: stretch;
         }
 
@@ -67,8 +72,8 @@
             margin-top: 0;
             color: #333;
             font-size: 1.5em;
+            flex-shrink: 0; 
         }
-        /* Menghapus gaya untuk .history h2 karena akan dihapus dari HTML */
         
         #layar {
             width: 100%;
@@ -82,17 +87,17 @@
             background-color: #e9e9e9;
             color: #333;
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-            /* Memungkinkan layar bergeser secara horizontal jika konten terlalu panjang */
             overflow-x: auto; 
-            /* Mengatur arah teks dari kanan ke kiri untuk selalu menampilkan bagian akhir */
             direction: rtl;
+            flex-shrink: 0; 
         }
 
         .tombol-grid-main {
             display: grid;
-            grid-template-columns: repeat(3, 1fr) 1fr;
+            grid-template-columns: repeat(4, 1fr); 
             gap: 8px;
-            flex-grow: 1; /* Memastikan grid tombol mengisi ruang yang tersisa */
+            flex-grow: 1; 
+            flex-shrink: 1; 
         }
 
         .tombol {
@@ -103,6 +108,7 @@
             cursor: pointer;
             background-color: #f0f0f0;
             transition: all 0.2s ease;
+            min-height: 0; 
         }
 
         .tombol:hover {
@@ -112,7 +118,6 @@
         .operator {
             background-color: #ff8c00;
             color: white;
-            grid-column: 4;
         }
 
         .operator:hover {
@@ -132,10 +137,12 @@
         #historyList {
             list-style-type: none;
             padding: 0;
-            /* Mengatur margin agar daftar naik, sesuai permintaan */
+            /* Mengatur margin agar daftar naik */
             margin: 0;
+            /* REVERTED: Mengembalikan overflow-y ke auto untuk scrolling internal */
+            overflow-y: auto; 
             flex-grow: 1; /* Agar daftar mengisi ruang yang tersedia */
-            overflow-y: auto;
+            /* REVERTED: Menghapus properti flex yang mengatur arah item */
         }
 
         #historyList li {
@@ -160,8 +167,8 @@
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.2s ease;
-            /* Mengubah font tombol hapus riwayat menjadi Quicksand sesuai permintaan */
             font-family: 'Quicksand', sans-serif;
+            flex-shrink: 0; 
         }
 
         #clearHistoryBtn:hover {
@@ -214,14 +221,49 @@
     // Variabel untuk menyimpan ekspresi lengkap yang sedang dibuat
     let ekspresiSaatIni = '';
 
-    // Fungsi untuk menambahkan riwayat ke daftar di sisi kanan
+    // Fungsi baru: Memformat angka dengan titik sebagai pemisah ribuan
+    function formatAngkaDenganTitikRibuan(angka) {
+        // Konversi ke string dan pisahkan bagian integer dan desimal
+        const angkaStr = angka.toString();
+        const bagian = angkaStr.split('.');
+        let bagianInteger = bagian[0];
+        const bagianDesimal = bagian.length > 1 ? ',' + bagian[1] : '';
+
+        // Gunakan regex untuk menambahkan titik pemisah ribuan pada bagian integer
+        // Misalnya: 1234567 -> 1.234.567
+        bagianInteger = bagianInteger.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+        // Gabungkan kembali dengan desimal (jika ada)
+        return bagianInteger + bagianDesimal.replace('.', ','); // Mengganti titik desimal dengan koma sesuai format Indonesia
+    }
+
+    // Fungsi untuk memformat ekspresi:
+    // 1. Menghitung hasil jika ekspresi valid
+    // 2. Mengubah hasil tersebut menjadi string dengan titik ribuan
+    // 3. Mengembalikan ekspresi atau hasil yang diformat
+    function formatTampilan(input) {
+        // Jika input bukan angka (misalnya ekspresi), tampilkan apa adanya
+        if (isNaN(input) || input === '') {
+            return input;
+        }
+        // Jika input adalah angka
+        return formatAngkaDenganTitikRibuan(input);
+    }
+    
+    // Fungsi untuk menambahkan riwayat ke daftar di sisi kanan (DIKEMBALIKAN KE FUNGSI ASLI)
     function tambahKeRiwayat(ekspresi, hasil) {
         const itemRiwayat = document.createElement('li');
-        itemRiwayat.textContent = `${ekspresi} = ${hasil}`;
+        // Format hasil sebelum menampilkannya di riwayat
+        const hasilTampil = formatAngkaDenganTitikRibuan(hasil);
+        
+        // Memastikan ekspresi diformat sebagai ekspresi, bukan nilai tunggal yang diformat
+        // Kita tampilkan ekspresi asli (tanpa titik ribuan) di sisi kiri tanda '='
+        itemRiwayat.textContent = `${ekspresi} = ${hasilTampil}`;
+        
         // Menambahkan item baru di bagian atas daftar
         historyList.prepend(itemRiwayat);
 
-        // Memeriksa jumlah baris riwayat
+        // Memeriksa jumlah baris riwayat (FUNGSI ASLI DIKEMBALIKAN)
         // Perubahan: Batas riwayat dari 8 menjadi 9
         if (historyList.children.length > 9) {
             // Hapus baris terlama (baris terakhir) jika jumlahnya lebih dari 9
@@ -260,16 +302,19 @@
                 return;
             }
             ekspresiSaatIni += nilaiInput;
+            // Tampilkan ekspresi asli (tanpa format ribuan) di layar saat sedang mengetik ekspresi
             layar.value = ekspresiSaatIni;
         } else if (nilaiInput === '=' || nilaiInput === 'Enter') {
             // Jika tombol "=" atau 'Enter' diklik, hitung hasil dan tampilkan
             const hasil = hitung(ekspresiSaatIni);
             tambahKeRiwayat(ekspresiSaatIni, hasil);
             ekspresiSaatIni = hasil.toString(); // Atur hasil sebagai ekspresi baru untuk operasi selanjutnya
-            layar.value = ekspresiSaatIni;
+            // Tampilkan hasil yang sudah diformat di layar
+            layar.value = formatTampilan(ekspresiSaatIni);
         } else if (nilaiInput === 'Backspace') {
             // Tangani tombol 'Backspace' untuk menghapus karakter terakhir
             ekspresiSaatIni = ekspresiSaatIni.slice(0, -1);
+            // Tampilkan ekspresi yang tersisa (atau '0' jika kosong)
             layar.value = ekspresiSaatIni === '' ? '0' : ekspresiSaatIni;
             
             // Hitung ulang dan update riwayat setelah penghapusan
@@ -282,8 +327,26 @@
             }
         } else {
             // Jika tombol angka atau titik desimal diklik
+            
+            // Logika untuk titik desimal: hanya boleh satu per angka
+            if (nilaiInput === '.' && ekspresiSaatIni.includes('.')) {
+                // Cek apakah titik desimal ada setelah operator terakhir
+                const operatorTerakhirIndex = Math.max(
+                    ekspresiSaatIni.lastIndexOf('+'),
+                    ekspresiSaatIni.lastIndexOf('-'),
+                    ekspresiSaatIni.lastIndexOf('*'),
+                    ekspresiSaatIni.lastIndexOf('/')
+                );
+                const titikTerakhirIndex = ekspresiSaatIni.lastIndexOf('.');
+                
+                if (titikTerakhirIndex > operatorTerakhirIndex) {
+                    return; // Batasi penambahan titik jika sudah ada di angka yang sama
+                }
+            }
+            
             ekspresiSaatIni += nilaiInput;
             // Tampilkan ekspresi lengkap di layar
+            // Saat ekspresi sedang dibangun (belum ada operator hitungan), kita tampilkan nilai yang sedang diketik
             layar.value = ekspresiSaatIni;
 
             // Hitung dan tambahkan hasil ke riwayat secara otomatis setelah setiap input
@@ -319,6 +382,10 @@
         const nilaiInput = keyMap[e.key];
 
         if (nilaiInput) {
+            // Mencegah aksi default browser untuk tombol Enter
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
             handleInput(nilaiInput);
         }
     });
